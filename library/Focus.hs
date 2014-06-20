@@ -1,6 +1,6 @@
 module Focus where
 
-import Focus.Prelude
+import Focus.Prelude hiding (adjust, update, alter, insert, delete, lookup)
 
 
 -- |
@@ -24,12 +24,6 @@ data Command a =
   Remove |
   Replace a
   deriving (Functor)
-
--- |
--- Convert a pure 'Focus' into a monadic one.
-{-# INLINE monadize #-}
-monadize :: (Monad m) => Focus a r -> FocusM m a r
-monadize = fmap return
 
 
 -- * Constructors for common pure patterns
@@ -89,3 +83,20 @@ updateM f = maybe (return ((), Keep)) (liftM (((),) . maybe Remove Replace) . f)
 -- A monadic version of 'alter'.
 alterM :: (Monad m) => (Maybe a -> m (Maybe a)) -> FocusM m a ()
 alterM f = liftM (((),) . maybe Remove Replace) . f
+
+-- |
+-- A monadic version of 'insert'.
+insertM :: (Monad m) => a -> FocusM m a ()
+insertM = fmap return . insert
+
+-- |
+-- A monadic version of 'delete'.
+deleteM :: (Monad m) => FocusM m a ()
+deleteM = fmap return delete
+
+-- |
+-- A monadic version of 'lookup'.
+lookupM :: (Monad m) => FocusM m a (Maybe a)
+lookupM = fmap return lookup
+
+
