@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 module Focus.Prelude
 ( 
   module Exports,
