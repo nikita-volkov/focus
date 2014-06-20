@@ -4,7 +4,6 @@ module Focus.Prelude
   module Exports,
   bug,
   bottom,
-  bool,
 )
 where
 
@@ -32,7 +31,7 @@ import Data.Bits as Exports
 import Data.Fixed as Exports
 import Data.Ix as Exports
 import Data.Data as Exports
-import Data.Bool as Exports hiding (bool)
+import Data.Bool as Exports
 import Text.Read as Exports (readMaybe, readEither)
 import Control.Exception as Exports hiding (tryJust, try, assert)
 import System.Mem as Exports
@@ -65,20 +64,3 @@ bug = [e| $(Debug.Trace.LocationTH.failure) . (msg <>) |]
     msg = "A \"focus\" package bug: " :: String
 
 bottom = [e| $bug "Bottom evaluated" |]
-
-bool :: a -> a -> Bool -> a
-bool f _ False = f
-bool _ t True  = t
-
-
-#if __GLASGOW_HASKELL__ < 708
-
-instance Traversable ((,) a) where
-  traverse f (x, y) = (,) x <$> f y
-
-instance Foldable ((,) a) where
-  foldMap f (_, y) = f y
-  foldr f z (_, y) = f y z
-
-#endif
-
