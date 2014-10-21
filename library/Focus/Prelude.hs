@@ -1,8 +1,6 @@
 module Focus.Prelude
 ( 
   module Exports,
-  bug,
-  bottom,
 )
 where
 
@@ -49,17 +47,3 @@ import Data.IORef as Exports
 import Data.STRef as Exports
 import Control.Monad.ST as Exports
 import Debug.Trace as Exports hiding (traceM)
-
--- placeholders
--------------------------
-import Development.Placeholders as Exports
-
--- custom
--------------------------
-import qualified Debug.Trace.LocationTH
-
-bug = [e| $(Debug.Trace.LocationTH.failure) . (msg <>) |]
-  where
-    msg = "A \"focus\" package bug: " :: String
-
-bottom = [e| $bug "Bottom evaluated" |]
