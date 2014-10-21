@@ -50,8 +50,6 @@ source-repository head
 library
   hs-source-dirs:
     library
-  other-modules:
-    Focus.Prelude
   exposed-modules:
     Focus
   build-depends:
