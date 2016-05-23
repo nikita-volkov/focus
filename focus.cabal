@@ -39,7 +39,6 @@ build-type:
 cabal-version:
   >=1.10
 tested-with:
-  GHC==7.4.2,
   GHC==7.6.3,
   GHC==7.8.4,
   GHC==7.10.3,
@@ -58,7 +57,7 @@ library
   exposed-modules:
     Focus
   build-depends:
-    base >= 4.5 && < 4.10
+    base >= 4.6 && < 4.10
   default-extensions:
     CPP, DeriveFunctor, NoImplicitPrelude, TupleSections
   default-language:
