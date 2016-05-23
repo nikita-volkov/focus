@@ -1,6 +1,10 @@
 module Focus where
 
+#if MIN_VERSION_base(4,6,0)
 import Prelude hiding (adjust, update, alter, insert, delete, lookup)
+#else
+import Prelude hiding (lookup)
+#endif
 import Control.Monad
 
 
