@@ -7,7 +7,7 @@ import Focus.Private.Prelude
 -- A combination of the output value and instruction.
 data Decision a b =
   Decision b (Instruction a)
-  deriving (Functor)
+  deriving (Functor, Foldable, Traversable)
 
 instance Bifunctor Decision where
   bimap proj1 proj2 (Decision output instruction) =
@@ -21,7 +21,7 @@ data Instruction a =
   Keep |
   Remove |
   Set a
-  deriving (Functor)
+  deriving (Functor, Foldable, Traversable)
 
 instructionToMaybe :: Instruction a -> Maybe a
 instructionToMaybe =
