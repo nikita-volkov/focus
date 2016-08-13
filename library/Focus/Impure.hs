@@ -3,9 +3,6 @@ module Focus.Impure
   A.Focus(..),
   B.Decision(..),
   B.Instruction(..),
-  A.testingIfModifies,
-  A.testingIfRemoves,
-  A.testingIfInserts,
   -- * Implementations of the common patterns
   A.adjust,
   A.update,
