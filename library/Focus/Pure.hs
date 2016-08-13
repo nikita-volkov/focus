@@ -10,6 +10,7 @@ module Focus.Pure
   A.insert,
   A.delete,
   A.lookup,
+  A.lookupAndDelete,
 )
 where
 

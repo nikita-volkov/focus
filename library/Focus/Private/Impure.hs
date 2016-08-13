@@ -151,3 +151,9 @@ lookup :: (Monad m) => Focus a m (Maybe a)
 lookup =
   Lookup (fmap return ((,) <$> id <*> const A.Keep))
 
+-- |
+-- A monadic version of 'Focus.Pure.lookupAndDelete'.
+{-# INLINE lookupAndDelete #-}
+lookupAndDelete :: (Monad m) => Focus a m (Maybe a)
+lookupAndDelete =
+  Lookup (fmap return ((,) <$> id <*> const A.Remove))

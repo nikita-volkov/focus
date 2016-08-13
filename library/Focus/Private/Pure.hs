@@ -72,3 +72,9 @@ lookup :: Focus a (Maybe a)
 lookup =
   Lookup (\a -> (a, Keep))
 
+-- |
+-- Delete, returning the result of the lookup.
+{-# INLINE lookupAndDelete #-}
+lookupAndDelete :: Focus a (Maybe a)
+lookupAndDelete =
+  Lookup ((,) <$> id <*> const Remove)
