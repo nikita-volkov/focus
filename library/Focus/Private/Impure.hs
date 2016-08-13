@@ -29,38 +29,80 @@ mapDecision mapping =
     Lookup fxFn ->
       Lookup (liftM mapping . fxFn)
 
-{-# INLINE gettingInstruction #-}
-gettingInstruction :: Monad m => Focus a m b -> Focus a m (b, A.Instruction a)
-gettingInstruction =
+{-# INLINE premap #-}
+premap :: Monad m => (a1 -> a2) -> (a2 -> a1) -> Focus a2 m b -> Focus a1 m b
+premap proj1 proj2 =
+  \case
+    Const fx ->
+      Const (fmap (second (fmap proj2)) fx)
+    Lookup fxFn ->
+      Lookup (fmap (second (fmap proj2)) . fxFn . fmap proj1)
+
+-- |
+-- Projection to a Lookup function.
+{-# INLINE toLookupFn #-}
+toLookupFn :: Focus a m b -> (Maybe a -> m (A.Decision a b))
+toLookupFn =
+  \case
+    Const fx ->
+      const fx
+    Lookup fxFn ->
+      fxFn
+
+
+-- * Instruction extraction
+-------------------------
+
+{-# INLINE extractingInstruction #-}
+extractingInstruction :: Monad m => Focus a m b -> Focus a m (b, A.Instruction a)
+extractingInstruction =
   mapDecision $
   \ (output, instruction) -> ((output, instruction), instruction)
+
+{-# INLINE projectingInstruction #-}
+projectingInstruction :: Monad m => (A.Instruction a -> c) -> Focus a m b -> Focus a m (b, c)
+projectingInstruction fn =
+  mapDecision $
+  \ (output, instruction) -> ((output, fn instruction), instruction)
 
 -- |
 -- Extends the output with a flag,
 -- saying whether an instruction, which is not 'Keep', has been produced.
-{-# INLINE modifies #-}
-modifies :: Monad m => Focus a m b -> Focus a m (b, Bool)
-modifies =
-  mapDecision $
-  \ (output, instruction) -> ((output, instructionTest instruction), instruction)
-  where
-    instructionTest =
-      \case
-        A.Keep -> False
-        _ -> True
+{-# INLINE testingIfModifies #-}
+testingIfModifies :: Monad m => Focus a m b -> Focus a m (b, Bool)
+testingIfModifies =
+  projectingInstruction $
+  \case
+    A.Keep -> False
+    _ -> True
 
 -- |
 -- Extends the output with a flag,
 -- saying whether the 'Remove' instruction has been produced.
-{-# INLINE removes #-}
-removes :: Monad m => Focus a m b -> Focus a m (b, Bool)
-removes =
-  mapDecision $
-  \ (output, instruction) -> ((output, instructionTest instruction), instruction)
+{-# INLINE testingIfRemoves #-}
+testingIfRemoves :: Monad m => Focus a m b -> Focus a m (b, Bool)
+testingIfRemoves =
+  projectingInstruction $
+  \case
+    A.Remove -> True
+    _ -> False
+
+-- |
+-- Extends the output with a flag,
+-- saying whether an item will be inserted.
+-- That is, it didn't exist before and a Set instruction is produced.
+{-# INLINE testingIfInserts #-}
+testingIfInserts :: Monad m => Focus a m b -> Focus a m (b, Bool)
+testingIfInserts =
+  Lookup . lookupFn . toLookupFn
   where
-    instructionTest =
+    lookupFn fxFn lookupResult =
+      do
+        (output, instruction) <- fxFn lookupResult
+        return ((output, isNothing lookupResult && instructionIsReplace instruction), instruction)
+    instructionIsReplace =
       \case
-        A.Remove -> True
+        A.Replace _ -> True
         _ -> False
 
 
