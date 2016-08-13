@@ -1,4 +1,4 @@
-module Focus where
+module Focus.Pure where
 
 import Prelude hiding (adjust, update, alter, insert, delete, lookup)
 import Control.Monad
@@ -13,10 +13,6 @@ import Control.Monad
 type Focus a r = Maybe a -> (r, Decision a)
 
 -- |
--- A monadic version of 'Focus'.
-type FocusM a m r = Maybe a -> m (r, Decision a)
-
--- |
 -- What to do with the focused value.
 -- 
 -- The interpretation of the commands is up to the context APIs.
@@ -27,7 +23,7 @@ data Decision a =
   deriving (Functor)
 
 
--- * Constructors for common pure patterns
+-- * Implementations of the common patterns
 -------------------------
 
 -- |
@@ -71,45 +67,4 @@ delete = const ((), Remove)
 {-# INLINE lookup #-}
 lookup :: Focus a (Maybe a)
 lookup r = (r, Keep)
-
-
--- * Constructors for monadic patterns
--------------------------
-
--- |
--- A monadic version of 'adjust'.
-{-# INLINE adjustM #-}
-adjustM :: (Monad m) => (a -> m a) -> FocusM a m ()
-adjustM f = maybe (return ((), Keep)) (liftM (((),) . Replace) . f)
-
--- |
--- A monadic version of 'update'.
-{-# INLINE updateM #-}
-updateM :: (Monad m) => (a -> m (Maybe a)) -> FocusM a m ()
-updateM f = maybe (return ((), Keep)) (liftM (((),) . maybe Remove Replace) . f)
-
--- |
--- A monadic version of 'alter'.
-{-# INLINE alterM #-}
-alterM :: (Monad m) => (Maybe a -> m (Maybe a)) -> FocusM a m ()
-alterM f = liftM (((),) . maybe Remove Replace) . f
-
--- |
--- A monadic version of 'insert'.
-{-# INLINE insertM #-}
-insertM :: (Monad m) => a -> FocusM a m ()
-insertM = fmap return . insert
-
--- |
--- A monadic version of 'delete'.
-{-# INLINE deleteM #-}
-deleteM :: (Monad m) => FocusM a m ()
-deleteM = fmap return delete
-
--- |
--- A monadic version of 'lookup'.
-{-# INLINE lookupM #-}
-lookupM :: (Monad m) => FocusM a m (Maybe a)
-lookupM = fmap return lookup
-
 

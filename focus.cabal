@@ -55,7 +55,8 @@ library
   hs-source-dirs:
     library
   exposed-modules:
-    Focus
+    Focus.Pure
+    Focus.Impure
   build-depends:
     base >= 4.6 && < 4.10
   default-extensions:
