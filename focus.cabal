@@ -54,6 +54,10 @@ source-repository head
 library
   hs-source-dirs:
     library
+  other-modules:
+    Focus.Private.Prelude
+    Focus.Private.Pure
+    Focus.Private.Impure
   exposed-modules:
     Focus.Pure
     Focus.Impure
