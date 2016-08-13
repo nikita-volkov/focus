@@ -20,6 +20,35 @@ liftPure =
     A.Lookup lookupFn ->
       Lookup (return . lookupFn)
 
+{-# INLINE mapDecision #-}
+mapDecision :: Monad m => (A.Decision a b1 -> A.Decision a b2) -> Focus a m b1 -> Focus a m b2
+mapDecision mapping =
+  \case
+    Const fx ->
+      Const (liftM mapping fx)
+    Lookup fxFn ->
+      Lookup (liftM mapping . fxFn)
+
+{-# INLINE gettingInstruction #-}
+gettingInstruction :: Monad m => Focus a m b -> Focus a m (b, A.Instruction a)
+gettingInstruction =
+  mapDecision $
+  \ (output, instruction) -> ((output, instruction), instruction)
+
+-- |
+-- Extends the output with a flag,
+-- saying whether an instruction, which is not 'Keep', has been produced.
+{-# INLINE modifies #-}
+modifies :: Monad m => Focus a m b -> Focus a m (b, Bool)
+modifies =
+  mapDecision $
+  \ (output, instruction) -> ((output, instructionIsKeep instruction), instruction)
+  where
+    instructionIsKeep =
+      \case
+        A.Keep -> True
+        _ -> False
+
 
 -- * Implementations of the common patterns
 -------------------------
