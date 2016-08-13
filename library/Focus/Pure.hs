@@ -1,8 +1,8 @@
 module Focus.Pure
 (
   A.Focus(..),
-  A.Decision(..),
-  A.Instruction(..),
+  B.Decision(..),
+  B.Instruction(..),
   -- * Implementations of the common patterns
   A.adjust,
   A.update,
@@ -14,3 +14,4 @@ module Focus.Pure
 where
 
 import qualified Focus.Private.Pure as A
+import qualified Focus.Private.Decision as B

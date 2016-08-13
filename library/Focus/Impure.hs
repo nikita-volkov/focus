@@ -14,4 +14,4 @@ module Focus.Impure
 where
 
 import qualified Focus.Private.Impure as A
-import qualified Focus.Private.Pure as B
+import qualified Focus.Private.Decision as B

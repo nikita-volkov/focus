@@ -1,24 +1,12 @@
 module Focus.Private.Pure where
 
 import Focus.Private.Prelude hiding (adjust, update, alter, insert, delete, lookup, Const)
+import Focus.Private.Decision
 
 
 data Focus a b =
   Const (Decision a b) |
   Lookup (Maybe a -> Decision a b)
-
-type Decision a b =
-  (b, Instruction a)
-
--- |
--- What to do with the focused value.
--- 
--- The interpretation of the commands is up to the context APIs.
-data Instruction a =
-  Keep |
-  Remove |
-  Set a
-  deriving (Functor)
 
 
 -- * Implementations of the common patterns
@@ -30,7 +18,7 @@ data Instruction a =
 {-# INLINE adjust #-}
 adjust :: (a -> a) -> Focus a ()
 adjust f =
-  Lookup (maybe ((), Keep) (\a -> ((), Set (f a))))
+  Lookup (maybe (Decision () Keep) (\a -> Decision () (Set (f a))))
 
 -- |
 -- Reproduces the behaviour of
@@ -38,7 +26,7 @@ adjust f =
 {-# INLINE update #-}
 update :: (a -> Maybe a) -> Focus a ()
 update f =
-  Lookup (maybe ((), Keep) (\a -> ((), maybe Remove Set (f a))))
+  Lookup (maybe (Decision () Keep) (\a -> Decision () (maybe Remove Set (f a))))
 
 -- |
 -- Reproduces the behaviour of
@@ -46,7 +34,7 @@ update f =
 {-# INLINE alter #-}
 alter :: (Maybe a -> Maybe a) -> Focus a ()
 alter f =
-  Lookup (((),) . maybe Remove Set . f)
+  Lookup (Decision () . maybe Remove Set . f)
 
 -- |
 -- Reproduces the behaviour of
@@ -54,7 +42,7 @@ alter f =
 {-# INLINE insert #-}
 insert :: a -> Focus a ()
 insert a =
-  Const ((), Set a)
+  Const (Decision () (Set a))
 
 -- |
 -- Reproduces the behaviour of
@@ -62,7 +50,7 @@ insert a =
 {-# INLINE delete #-}
 delete :: Focus a ()
 delete =
-  Const ((), Remove)
+  Const (Decision () Remove)
 
 -- |
 -- Reproduces the behaviour of
@@ -70,5 +58,5 @@ delete =
 {-# INLINE lookup #-}
 lookup :: Focus a (Maybe a)
 lookup =
-  Lookup (\a -> (a, Keep))
+  Lookup (\a -> Decision a Keep)
 

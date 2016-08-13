@@ -2,12 +2,13 @@ module Focus.Private.Impure
 where
 
 import Focus.Private.Prelude hiding (adjust, update, alter, insert, delete, lookup, Const)
+import Focus.Private.Decision
 import qualified Focus.Private.Pure as A
 
 
 data Focus a m b =
-  Const (m (A.Decision a b)) |
-  Lookup (Maybe a -> m (A.Decision a b))
+  Const (m (Decision a b)) |
+  Lookup (Maybe a -> m (Decision a b))
   deriving (Functor)
 
 
@@ -21,7 +22,7 @@ liftPure =
       Lookup (return . lookupFn)
 
 {-# INLINE mapDecision #-}
-mapDecision :: Monad m => (A.Decision a b1 -> A.Decision a b2) -> Focus a m b1 -> Focus a m b2
+mapDecision :: Monad m => (Decision a b1 -> Decision a b2) -> Focus a m b1 -> Focus a m b2
 mapDecision mapping =
   \case
     Const fx ->
@@ -34,14 +35,14 @@ premap :: Monad m => (a1 -> a2) -> (a2 -> a1) -> Focus a2 m b -> Focus a1 m b
 premap proj1 proj2 =
   \case
     Const fx ->
-      Const (fmap (second (fmap proj2)) fx)
+      Const (fmap (first proj2) fx)
     Lookup fxFn ->
-      Lookup (fmap (second (fmap proj2)) . fxFn . fmap proj1)
+      Lookup (fmap (first proj2) . fxFn . fmap proj1)
 
 -- |
 -- Projection to a Lookup function.
 {-# INLINE toLookupFn #-}
-toLookupFn :: Focus a m b -> (Maybe a -> m (A.Decision a b))
+toLookupFn :: Focus a m b -> (Maybe a -> m (Decision a b))
 toLookupFn =
   \case
     Const fx ->
@@ -54,16 +55,16 @@ toLookupFn =
 -------------------------
 
 {-# INLINE extractingInstruction #-}
-extractingInstruction :: Monad m => Focus a m b -> Focus a m (b, A.Instruction a)
+extractingInstruction :: Monad m => Focus a m b -> Focus a m (b, Instruction a)
 extractingInstruction =
   mapDecision $
-  \ (output, instruction) -> ((output, instruction), instruction)
+  \ (Decision output instruction) -> Decision (output, instruction) instruction
 
 {-# INLINE projectingInstruction #-}
-projectingInstruction :: Monad m => (A.Instruction a -> c) -> Focus a m b -> Focus a m (b, c)
+projectingInstruction :: Monad m => (Instruction a -> c) -> Focus a m b -> Focus a m (b, c)
 projectingInstruction fn =
   mapDecision $
-  \ (output, instruction) -> ((output, fn instruction), instruction)
+  \ (Decision output instruction) -> Decision (output, fn instruction) instruction
 
 -- |
 -- Extends the output with a flag,
@@ -73,7 +74,7 @@ testingIfModifies :: Monad m => Focus a m b -> Focus a m (b, Bool)
 testingIfModifies =
   projectingInstruction $
   \case
-    A.Keep -> False
+    Keep -> False
     _ -> True
 
 -- |
@@ -84,7 +85,7 @@ testingIfRemoves :: Monad m => Focus a m b -> Focus a m (b, Bool)
 testingIfRemoves =
   projectingInstruction $
   \case
-    A.Remove -> True
+    Remove -> True
     _ -> False
 
 -- |
@@ -98,11 +99,11 @@ testingIfInserts =
   where
     lookupFn fxFn lookupResult =
       do
-        (output, instruction) <- fxFn lookupResult
-        return ((output, isNothing lookupResult && instructionIsReplace instruction), instruction)
+        Decision output instruction <- fxFn lookupResult
+        return (Decision (output, isNothing lookupResult && instructionIsReplace instruction) instruction)
     instructionIsReplace =
       \case
-        A.Set _ -> True
+        Set _ -> True
         _ -> False
 
 
@@ -114,40 +115,40 @@ testingIfInserts =
 {-# INLINE adjust #-}
 adjust :: (Monad m) => (a -> m a) -> Focus a m ()
 adjust f = 
-  Lookup (maybe (return ((), A.Keep)) (liftM (((),) . A.Set) . f))
+  Lookup (maybe (return (Decision () Keep)) (liftM ((Decision ()) . Set) . f))
 
 -- |
 -- A monadic version of 'Focus.Pure.update'.
 {-# INLINE update #-}
 update :: (Monad m) => (a -> m (Maybe a)) -> Focus a m ()
 update f =
-  Lookup (maybe (return ((), A.Keep)) (liftM (((),) . maybe A.Remove A.Set) . f))
+  Lookup (maybe (return (Decision () Keep)) (liftM ((Decision ()) . maybe Remove Set) . f))
 
 -- |
 -- A monadic version of 'Focus.Pure.alter'.
 {-# INLINE alter #-}
 alter :: (Monad m) => (Maybe a -> m (Maybe a)) -> Focus a m ()
 alter f =
-  Lookup (liftM (((),) . maybe A.Remove A.Set) . f)
+  Lookup (liftM ((Decision ()) . maybe Remove Set) . f)
 
 -- |
 -- A monadic version of 'Focus.Pure.insert'.
 {-# INLINE insert #-}
 insert :: (Monad m) => a -> Focus a m ()
 insert a =
-  Const (return ((), A.Set a))
+  Const (return (Decision () (Set a)))
 
 -- |
 -- A monadic version of 'Focus.Pure.delete'.
 {-# INLINE delete #-}
 delete :: (Monad m) => Focus a m ()
 delete =
-  Const (return ((), A.Remove))
+  Const (return (Decision () Remove))
 
 -- |
 -- A monadic version of 'Focus.Pure.lookup'.
 {-# INLINE lookup #-}
 lookup :: (Monad m) => Focus a m (Maybe a)
 lookup =
-  Lookup (fmap return ((,) <$> id <*> const A.Keep))
+  Lookup (fmap return (Decision <$> id <*> const Keep))
 
