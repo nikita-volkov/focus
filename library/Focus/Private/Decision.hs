@@ -23,3 +23,8 @@ data Instruction a =
   Set a
   deriving (Functor)
 
+instructionToMaybe :: Instruction a -> Maybe a
+instructionToMaybe =
+  \case
+    Set a -> Just a
+    _ -> Nothing
