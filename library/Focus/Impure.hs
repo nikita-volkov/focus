@@ -2,6 +2,7 @@ module Focus.Impure
 (
   A.Focus(..),
   B.Decision(..),
+  B.Instruction(..),
   -- * Implementations of the common patterns
   A.adjust,
   A.update,

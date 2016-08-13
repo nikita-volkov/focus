@@ -6,8 +6,8 @@ import qualified Focus.Private.Pure as A
 
 
 data Focus a m b =
-  Const (m (b, A.Decision a)) |
-  Lookup (Maybe a -> m (b, A.Decision a))
+  Const (m (A.Decision a b)) |
+  Lookup (Maybe a -> m (A.Decision a b))
   deriving (Functor)
 
 

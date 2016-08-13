@@ -4,14 +4,17 @@ import Focus.Private.Prelude hiding (adjust, update, alter, insert, delete, look
 
 
 data Focus a b =
-  Const (b, Decision a) |
-  Lookup (Maybe a -> (b, Decision a))
+  Const (Decision a b) |
+  Lookup (Maybe a -> Decision a b)
+
+type Decision a b =
+  (b, Instruction a)
 
 -- |
 -- What to do with the focused value.
 -- 
 -- The interpretation of the commands is up to the context APIs.
-data Decision a =
+data Instruction a =
   Keep |
   Remove |
   Replace a

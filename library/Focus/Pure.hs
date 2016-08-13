@@ -2,6 +2,7 @@ module Focus.Pure
 (
   A.Focus(..),
   A.Decision(..),
+  A.Instruction(..),
   -- * Implementations of the common patterns
   A.adjust,
   A.update,
