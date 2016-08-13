@@ -13,6 +13,18 @@ instance Bifunctor Decision where
   bimap proj1 proj2 (Decision output instruction) =
     Decision (proj2 output) (fmap proj1 instruction)
 
+instance Bifoldable Decision where
+  {-# INLINE bifoldMap #-}
+  bifoldMap proj1 proj2 (Decision output instruction) =
+    foldMap proj1 instruction <> proj2 output
+  
+instance Bitraversable Decision where
+  {-# INLINE bitraverse #-}
+  bitraverse proj1 proj2 (Decision output instruction) =
+    Decision <$>
+    proj2 output <*>
+    traverse proj1 instruction
+
 -- |
 -- What to do with the focused value.
 -- 

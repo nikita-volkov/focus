@@ -1,7 +1,7 @@
 name:
   focus
 version:
-  0.7.1
+  0.7.2
 synopsis:
   A general abstraction for manipulating elements of container data structures
 description:
@@ -63,6 +63,7 @@ library
     Focus.Pure
     Focus.Impure
   build-depends:
+    bifunctors >= 5 && < 6,
     base-prelude >= 1 && < 2,
     base >= 4.6 && < 4.10
   default-extensions:
