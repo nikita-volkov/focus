@@ -10,6 +10,8 @@ module Focus.Impure
   A.insert,
   A.delete,
   A.lookup,
+  -- * Manipulation utilities
+  A.mapInput,
 )
 where
 

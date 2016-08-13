@@ -29,9 +29,9 @@ mapDecision mapping =
     Lookup fxFn ->
       Lookup (liftM mapping . fxFn)
 
-{-# INLINE premap #-}
-premap :: Monad m => (a1 -> a2) -> (a2 -> a1) -> Focus a2 m b -> Focus a1 m b
-premap proj1 proj2 =
+{-# INLINE mapInput #-}
+mapInput :: Monad m => (a1 -> a2) -> (a2 -> a1) -> Focus a2 m b -> Focus a1 m b
+mapInput proj1 proj2 =
   \case
     Const fx ->
       Const (fmap (second (fmap proj2)) fx)
