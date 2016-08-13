@@ -4,7 +4,4 @@ module Focus.Private.Prelude
 )
 where
 
-import Prelude as Exports
-import Control.Applicative as Exports
-import Control.Monad as Exports
-
+import BasePrelude as Exports
