@@ -17,7 +17,7 @@ type Decision a b =
 data Instruction a =
   Keep |
   Remove |
-  Replace a
+  Set a
   deriving (Functor)
 
 
@@ -30,7 +30,7 @@ data Instruction a =
 {-# INLINE adjust #-}
 adjust :: (a -> a) -> Focus a ()
 adjust f =
-  Lookup (maybe ((), Keep) (\a -> ((), Replace (f a))))
+  Lookup (maybe ((), Keep) (\a -> ((), Set (f a))))
 
 -- |
 -- Reproduces the behaviour of
@@ -38,7 +38,7 @@ adjust f =
 {-# INLINE update #-}
 update :: (a -> Maybe a) -> Focus a ()
 update f =
-  Lookup (maybe ((), Keep) (\a -> ((), maybe Remove Replace (f a))))
+  Lookup (maybe ((), Keep) (\a -> ((), maybe Remove Set (f a))))
 
 -- |
 -- Reproduces the behaviour of
@@ -46,7 +46,7 @@ update f =
 {-# INLINE alter #-}
 alter :: (Maybe a -> Maybe a) -> Focus a ()
 alter f =
-  Lookup (((),) . maybe Remove Replace . f)
+  Lookup (((),) . maybe Remove Set . f)
 
 -- |
 -- Reproduces the behaviour of
@@ -54,7 +54,7 @@ alter f =
 {-# INLINE insert #-}
 insert :: a -> Focus a ()
 insert a =
-  Const ((), Replace a)
+  Const ((), Set a)
 
 -- |
 -- Reproduces the behaviour of

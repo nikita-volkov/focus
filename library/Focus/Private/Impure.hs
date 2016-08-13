@@ -102,7 +102,7 @@ testingIfInserts =
         return ((output, isNothing lookupResult && instructionIsReplace instruction), instruction)
     instructionIsReplace =
       \case
-        A.Replace _ -> True
+        A.Set _ -> True
         _ -> False
 
 
@@ -114,28 +114,28 @@ testingIfInserts =
 {-# INLINE adjust #-}
 adjust :: (Monad m) => (a -> m a) -> Focus a m ()
 adjust f = 
-  Lookup (maybe (return ((), A.Keep)) (liftM (((),) . A.Replace) . f))
+  Lookup (maybe (return ((), A.Keep)) (liftM (((),) . A.Set) . f))
 
 -- |
 -- A monadic version of 'Focus.Pure.update'.
 {-# INLINE update #-}
 update :: (Monad m) => (a -> m (Maybe a)) -> Focus a m ()
 update f =
-  Lookup (maybe (return ((), A.Keep)) (liftM (((),) . maybe A.Remove A.Replace) . f))
+  Lookup (maybe (return ((), A.Keep)) (liftM (((),) . maybe A.Remove A.Set) . f))
 
 -- |
 -- A monadic version of 'Focus.Pure.alter'.
 {-# INLINE alter #-}
 alter :: (Monad m) => (Maybe a -> m (Maybe a)) -> Focus a m ()
 alter f =
-  Lookup (liftM (((),) . maybe A.Remove A.Replace) . f)
+  Lookup (liftM (((),) . maybe A.Remove A.Set) . f)
 
 -- |
 -- A monadic version of 'Focus.Pure.insert'.
 {-# INLINE insert #-}
 insert :: (Monad m) => a -> Focus a m ()
 insert a =
-  Const (return ((), A.Replace a))
+  Const (return ((), A.Set a))
 
 -- |
 -- A monadic version of 'Focus.Pure.delete'.
