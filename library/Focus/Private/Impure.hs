@@ -42,11 +42,25 @@ gettingInstruction =
 modifies :: Monad m => Focus a m b -> Focus a m (b, Bool)
 modifies =
   mapDecision $
-  \ (output, instruction) -> ((output, instructionIsKeep instruction), instruction)
+  \ (output, instruction) -> ((output, instructionTest instruction), instruction)
   where
-    instructionIsKeep =
+    instructionTest =
       \case
-        A.Keep -> True
+        A.Keep -> False
+        _ -> True
+
+-- |
+-- Extends the output with a flag,
+-- saying whether the 'Remove' instruction has been produced.
+{-# INLINE removes #-}
+removes :: Monad m => Focus a m b -> Focus a m (b, Bool)
+removes =
+  mapDecision $
+  \ (output, instruction) -> ((output, instructionTest instruction), instruction)
+  where
+    instructionTest =
+      \case
+        A.Remove -> True
         _ -> False
 
 
