@@ -59,3 +59,9 @@ delete = fmap return (const ((), Remove))
 lookup :: (Monad m) => Focus a m (Maybe a)
 lookup = fmap return ((,) <$> id <*> const Keep)
 
+-- |
+-- A monadic version of 'Focus.Pure.lookupAndDelete'.
+{-# INLINE lookupAndDelete #-}
+lookupAndDelete :: (Monad m) => Focus a m (Maybe a)
+lookupAndDelete =
+  fmap return ((,) <$> id <*> const Remove)
