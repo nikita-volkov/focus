@@ -7,19 +7,19 @@ import Control.Monad
 -- |
 -- A general modification function for some match.
 -- By processing a 'Maybe' value it produces some value to emit and 
--- a 'Decision' to perform on the match.
+-- a 'Instruction' to perform on the match.
 -- 
 -- The interpretation of this function is up to the context APIs.
-type Focus a r = Maybe a -> (r, Decision a)
+type Focus a r = Maybe a -> (r, Instruction a)
 
 -- |
 -- What to do with the focused value.
 -- 
 -- The interpretation of the commands is up to the context APIs.
-data Decision a =
+data Instruction a =
   Keep |
   Remove |
-  Replace a
+  Set a
   deriving (Functor)
 
 
@@ -31,28 +31,28 @@ data Decision a =
 -- @Data.Map.<http://hackage.haskell.org/package/containers-0.5.5.1/docs/Data-Map-Lazy.html#v:adjust adjust>@.
 {-# INLINE adjust #-}
 adjust :: (a -> a) -> Focus a ()
-adjust f = maybe ((), Keep) (\a -> ((), Replace (f a)))
+adjust f = maybe ((), Keep) (\a -> ((), Set (f a)))
 
 -- |
 -- Reproduces the behaviour of
 -- @Data.Map.<http://hackage.haskell.org/package/containers-0.5.5.1/docs/Data-Map-Lazy.html#v:update update>@.
 {-# INLINE update #-}
 update :: (a -> Maybe a) -> Focus a ()
-update f = maybe ((), Keep) (\a -> ((), maybe Remove Replace (f a)))
+update f = maybe ((), Keep) (\a -> ((), maybe Remove Set (f a)))
 
 -- |
 -- Reproduces the behaviour of
 -- @Data.Map.<http://hackage.haskell.org/package/containers-0.5.5.1/docs/Data-Map-Lazy.html#v:alter alter>@.
 {-# INLINE alter #-}
 alter :: (Maybe a -> Maybe a) -> Focus a ()
-alter f = ((),) . maybe Remove Replace . f
+alter f = ((),) . maybe Remove Set . f
 
 -- |
 -- Reproduces the behaviour of
 -- @Data.Map.<http://hackage.haskell.org/package/containers-0.5.5.1/docs/Data-Map-Lazy.html#v:insert insert>@.
 {-# INLINE insert #-}
 insert :: a -> Focus a ()
-insert a = const ((), Replace a)
+insert a = const ((), Set a)
 
 -- |
 -- Reproduces the behaviour of

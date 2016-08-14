@@ -7,16 +7,16 @@ import Control.Monad
 
 -- |
 -- A monadic version of 'Focus.Pure.Focus.Pure.Focus'.
-type Focus a m r = Maybe a -> m (r, Decision a)
+type Focus a m r = Maybe a -> m (r, Instruction a)
 
 -- |
 -- What to do with the focused value.
 -- 
 -- The interpretation of the commands is up to the context APIs.
-data Decision a =
+data Instruction a =
   Keep |
   Remove |
-  Replace a
+  Set a
   deriving (Functor)
 
 
@@ -27,25 +27,25 @@ data Decision a =
 -- A monadic version of 'Focus.Pure.adjust'.
 {-# INLINE adjust #-}
 adjust :: (Monad m) => (a -> m a) -> Focus a m ()
-adjust f = maybe (return ((), Keep)) (liftM (((),) . Replace) . f)
+adjust f = maybe (return ((), Keep)) (liftM (((),) . Set) . f)
 
 -- |
 -- A monadic version of 'Focus.Pure.update'.
 {-# INLINE update #-}
 update :: (Monad m) => (a -> m (Maybe a)) -> Focus a m ()
-update f = maybe (return ((), Keep)) (liftM (((),) . maybe Remove Replace) . f)
+update f = maybe (return ((), Keep)) (liftM (((),) . maybe Remove Set) . f)
 
 -- |
 -- A monadic version of 'Focus.Pure.alter'.
 {-# INLINE alter #-}
 alter :: (Monad m) => (Maybe a -> m (Maybe a)) -> Focus a m ()
-alter f = liftM (((),) . maybe Remove Replace) . f
+alter f = liftM (((),) . maybe Remove Set) . f
 
 -- |
 -- A monadic version of 'Focus.Pure.insert'.
 {-# INLINE insert #-}
 insert :: (Monad m) => a -> Focus a m ()
-insert a = fmap return (const ((), Replace a))
+insert a = fmap return (const ((), Set a))
 
 -- |
 -- A monadic version of 'Focus.Pure.delete'.
