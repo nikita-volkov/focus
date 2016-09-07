@@ -6,7 +6,7 @@ import Control.Monad
 
 
 -- |
--- A monadic version of 'Focus.Pure.Focus.Pure.Focus'.
+-- A monadic version of 'Focus.Pure.Focus'.
 type Focus a m r = Maybe a -> m (r, Instruction a)
 
 -- |
