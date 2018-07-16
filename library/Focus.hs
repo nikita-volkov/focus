@@ -6,6 +6,14 @@ import Control.Arrow
 import Control.Monad
 
 
+{-|
+Abstraction over the modification of an element of a datastructure.
+
+It is composable using the standard typeclasses, e.g.:
+
+>lookupAndDelete :: Monad m => Focus a m (Maybe a)
+>lookupAndDelete = lookup <* delete
+-}
 newtype Focus element m result = Focus (Maybe element -> m (result, Maybe element))
 
 deriving instance Functor m => Functor (Focus element m)
