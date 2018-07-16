@@ -30,3 +30,6 @@ update fn = Focus (pure . ((),) . flip (>>=) fn)
 
 lookup :: Applicative m => Focus a m (Maybe a)
 lookup = Focus (pure . (id &&& id))
+
+delete :: Applicative m => Focus a m ()
+delete = Focus (const (pure ((), Nothing)))
