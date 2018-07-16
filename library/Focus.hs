@@ -10,13 +10,9 @@ newtype Focus element m result = Focus (Maybe element -> m (result, Maybe elemen
 
 deriving instance Functor m => Functor (Focus element m)
 
-instance Applicative m => Applicative (Focus element m) where
+instance Monad m => Applicative (Focus element m) where
   pure result = Focus (\ state -> pure (result, state))
-  (<*>) (Focus focusAToB) (Focus focusA) =
-    Focus $ \ inputState ->
-    liftA2 (\ (aToB, aToBState) (a, aState) -> (aToB a, aToBState <|> aState))
-      (focusAToB inputState)
-      (focusA inputState)
+  (<*>) = ap
 
 instance Monad m => Monad (Focus element m) where
   return = pure
