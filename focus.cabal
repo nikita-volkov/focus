@@ -57,9 +57,9 @@ library
     library
   exposed-modules:
     Focus
-  build-depends:
-    base >= 4.6 && < 5
   default-extensions:
-    DeriveFunctor, NoImplicitPrelude, TupleSections
+    Arrows, BangPatterns, ConstraintKinds, DataKinds, DefaultSignatures, DeriveDataTypeable, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, EmptyDataDecls, FlexibleContexts, FlexibleInstances, FunctionalDependencies, GADTs, GeneralizedNewtypeDeriving, LambdaCase, LiberalTypeSynonyms, MagicHash, MultiParamTypeClasses, MultiWayIf, NoImplicitPrelude, NoMonomorphismRestriction, OverloadedLists, OverloadedStrings, PatternGuards, PatternSynonyms, ParallelListComp, QuasiQuotes, RankNTypes, RecordWildCards, ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TupleSections, TypeApplications, TypeFamilies, TypeOperators, UnboxedTuples
   default-language:
     Haskell2010
+  build-depends:
+    base >=4.6 && <5
