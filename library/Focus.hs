@@ -75,6 +75,7 @@ Same as @'lookup' <* 'delete'@.
 {-# RULES
   "lookup <* delete" [~1] lookup <* delete = lookupAndDelete
   #-}
+{-# INLINE lookupAndDelete #-}
 lookupAndDelete :: Monad m => Focus a m (Maybe a)
 lookupAndDelete = cases (Nothing, Nothing) (\ element -> (Just element, Nothing))
 
