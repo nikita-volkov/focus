@@ -27,6 +27,9 @@ instance Monad m => Monad (Focus element m) where
       case bKleisli aResult of
         Focus focusB -> focusB aOutState
 
+{-|
+Lift a pure function on a state of an element, which may as well produce a result.
+-}
 prim :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
 prim fn = Focus (return . fn)
 
@@ -103,6 +106,11 @@ Reproduces the behaviour of
 delete :: Monad m => Focus a m ()
 delete = alter (const Nothing)
 
+{-|
+Lookup an element and delete it if it exists.
+
+Same as @'lookup' <* 'delete'@.
+-}
 {-# RULES
   "lookup <* delete" [~1] lookup <* delete = lookupAndDelete
   #-}
