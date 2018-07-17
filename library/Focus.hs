@@ -156,9 +156,82 @@ unitCases onNoElement onElement = cases ((), onNoElement) (\ a -> ((), onElement
 -- * Monadic functions
 -------------------------
 
+-- ** Reading functions
+-------------------------
+
+{-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:findWithDefault findWithDefault>@
+with a better name.
+-}
+{-# INLINE[1] lookupWithDefaultM #-}
+lookupWithDefaultM :: Monad m => m a -> Focus a m a
+lookupWithDefaultM aM = casesM (liftM2 (,) aM (return Nothing)) (\ a -> return (a, Just a))
+
+-- ** Modifying functions
+-------------------------
+
+{-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:insert insert>@.
+-}
+{-# INLINE insertM #-}
+insertM :: Monad m => m a -> Focus a m ()
+insertM aM = unitCasesM (fmap Just aM) (const (fmap Just aM))
+
+{-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:insertWith insertWith>@
+with a better name.
+-}
+{-# INLINE insertOrMergeM #-}
+insertOrMergeM :: Monad m => (a -> a -> m a) -> m a -> Focus a m ()
+insertOrMergeM merge aM = unitCasesM (fmap Just aM) (\ a' -> aM >>= \ a -> fmap Just (merge a a'))
+
+{-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:alter alter>@.
+-}
+{-# INLINE alterM #-}
+alterM :: Monad m => (Maybe a -> m (Maybe a)) -> Focus a m ()
+alterM fn = unitCasesM (fn Nothing) (fn . Just)
+
+{-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:adjust adjust>@.
+-}
+{-# INLINE adjustM #-}
+adjustM :: Monad m => (a -> m a) -> Focus a m ()
+adjustM fn = updateM (fmap Just . fn)
+
+{-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:update update>@.
+-}
+{-# INLINE updateM #-}
+updateM :: Monad m => (a -> m (Maybe a)) -> Focus a m ()
+updateM fn = unitCasesM (pure Nothing) fn
+
+-- ** Construction utils
+-------------------------
+
 {-|
 Lift a monadic function on the state of an element, which may as well produce a result.
 -}
 {-# INLINE onMaybeM #-}
 onMaybeM :: Monad m => (Maybe a -> m (b, Maybe a)) -> Focus a m b
 onMaybeM fn = Focus (fn Nothing) (fn . Just)
+
+{-|
+Lift monadic functions which handle the cases of presence and absence of the element.
+-}
+{-# INLINE casesM #-}
+casesM :: Monad m => m (b, Maybe a) -> (a -> m (b, Maybe a)) -> Focus a m b
+casesM onNoElement onElement = Focus (onNoElement) (onElement)
+
+{-|
+Lift monadic functions which handle the cases of presence and absence of the element and produce no result.
+-}
+{-# INLINE unitCasesM #-}
+unitCasesM :: Monad m => m (Maybe a) -> (a -> m (Maybe a)) -> Focus a m ()
+unitCasesM onNoElement onElement = Focus (fmap ((),) onNoElement) (\ a -> fmap ((),) (onElement a))
