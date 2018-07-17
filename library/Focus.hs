@@ -1,9 +1,6 @@
 module Focus where
 
-import Prelude hiding (adjust, update, alter, insert, delete, lookup)
-import Control.Applicative
-import Control.Arrow
-import Control.Monad
+import Focus.Prelude hiding (adjust, update, alter, insert, delete, lookup)
 
 
 {-|
