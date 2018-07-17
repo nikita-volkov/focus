@@ -30,14 +30,22 @@ instance Monad m => Monad (Focus element m) where
       case bKleisli aResult of
         Focus focusB -> focusB aOutState
 
-adjust :: Applicative m => (a -> a) -> Focus a m ()
+adjust :: Monad m => (a -> a) -> Focus a m ()
 adjust fn = Focus (pure . ((),) . fmap fn)
 
-update :: Applicative m => (a -> Maybe a) -> Focus a m ()
+update :: Monad m => (a -> Maybe a) -> Focus a m ()
 update fn = Focus (pure . ((),) . flip (>>=) fn)
 
-lookup :: Applicative m => Focus a m (Maybe a)
+{-# INLINE[1] lookup #-}
+lookup :: Monad m => Focus a m (Maybe a)
 lookup = Focus (pure . (id &&& id))
 
-delete :: Applicative m => Focus a m ()
+{-# INLINE[1] delete #-}
+delete :: Monad m => Focus a m ()
 delete = Focus (const (pure ((), Nothing)))
+
+{-# RULES
+  "lookup <* delete" [~1] lookup <* delete = lookupAndDelete
+  #-}
+lookupAndDelete :: Monad m => Focus a m (Maybe a)
+lookupAndDelete = Focus (\ state -> pure (state, Nothing))
