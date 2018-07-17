@@ -11,7 +11,7 @@ It is composable using the standard typeclasses, e.g.:
 >lookupAndDelete :: Monad m => Focus a m (Maybe a)
 >lookupAndDelete = lookup <* delete
 -}
-newtype Focus element m result = Focus (Maybe element -> m (result, Maybe element))
+data Focus element m result = Focus (m (result, Maybe element)) (element -> m (result, Maybe element))
 
 deriving instance Functor m => Functor (Focus element m)
 
@@ -20,18 +20,27 @@ instance Monad m => Applicative (Focus element m) where
   (<*>) = ap
 
 instance Monad m => Monad (Focus element m) where
-  return result = Focus (\ state -> return (result, state))
-  (>>=) (Focus focusA) bKleisli =
-    Focus $ \ state -> do
-      (aResult, aOutState) <- focusA state
+  return result = Focus (return (result, Nothing)) (\ element -> return (result, Just element))
+  (>>=) (Focus aOnNoElement aOnElement) bKleisli = let
+    onElement element = do
+      (aResult, aOutState) <- aOnElement element
       case bKleisli aResult of
-        Focus focusB -> focusB aOutState
+        Focus bOnNoElement bOnElement -> maybe bOnNoElement bOnElement aOutState
+    onNoElement = do
+      (aResult, aOutState) <- aOnNoElement
+      case bKleisli aResult of
+        Focus bOnNoElement bOnElement -> maybe bOnNoElement bOnElement aOutState
+    in Focus onNoElement onElement
+
+
+-- * Pure functions
+-------------------------
 
 {-|
-Lift a pure function on a state of an element, which may as well produce a result.
+Lift a pure function on the state of an element, which may as well produce a result.
 -}
-prim :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
-prim fn = Focus (return . fn)
+pureMaybeFn :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
+pureMaybeFn fn = maybeFn (return . fn)
 
 {-|
 Reproduces the behaviour of
@@ -55,7 +64,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE alter #-}
 alter :: Monad m => (Maybe a -> Maybe a) -> Focus a m ()
-alter fn = prim (((),) . fn)
+alter fn = pureMaybeFn (((),) . fn)
 
 {-|
 Reproduces the behaviour of
@@ -79,7 +88,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE[1] lookup #-}
 lookup :: Monad m => Focus a m (Maybe a)
-lookup = prim (id &&& id)
+lookup = pureMaybeFn (id &&& id)
 
 {-|
 Reproduces the behaviour of
@@ -88,7 +97,7 @@ with a better name.
 -}
 {-# INLINE[1] lookupWithDefault #-}
 lookupWithDefault :: Monad m => a -> Focus a m a
-lookupWithDefault a = prim (maybe a id &&& id)
+lookupWithDefault a = pureMaybeFn (maybe a id &&& id)
 
 {-|
 Reproduces the behaviour of
@@ -115,4 +124,14 @@ Same as @'lookup' <* 'delete'@.
   "lookup <* delete" [~1] lookup <* delete = lookupAndDelete
   #-}
 lookupAndDelete :: Monad m => Focus a m (Maybe a)
-lookupAndDelete = prim (\ state -> (state, Nothing))
+lookupAndDelete = pureMaybeFn (\ state -> (state, Nothing))
+
+
+-- * Monadic functions
+-------------------------
+
+{-|
+Lift a monadic function on the state of an element, which may as well produce a result.
+-}
+maybeFn :: Monad m => (Maybe a -> m (b, Maybe a)) -> Focus a m b
+maybeFn fn = Focus (fn Nothing) (fn . Just)
