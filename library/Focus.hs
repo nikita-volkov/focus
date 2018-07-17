@@ -39,8 +39,23 @@ instance Monad m => Monad (Focus element m) where
 {-|
 Lift a pure function on the state of an element, which may as well produce a result.
 -}
-pureMaybeFn :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
-pureMaybeFn fn = maybeFn (return . fn)
+{-# INLINE pureOnMaybe #-}
+pureOnMaybe :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
+pureOnMaybe fn = onMaybe (return . fn)
+
+{-|
+Lift pure functions which handle the cases of presence and absence of the element.
+-}
+{-# INLINE pureCases #-}
+pureCases :: Monad m => (b, Maybe a) -> (a -> (b, Maybe a)) -> Focus a m b
+pureCases onNoElement onElement = Focus (return onNoElement) (return . onElement)
+
+{-|
+Lift pure functions which handle the cases of presence and absence of the element and produce no result.
+-}
+{-# INLINE pureResultlessCases #-}
+pureResultlessCases :: Monad m => Maybe a -> (a -> Maybe a) -> Focus a m ()
+pureResultlessCases onNoElement onElement = pureCases ((), onNoElement) (\ a -> ((), onElement a))
 
 {-|
 Reproduces the behaviour of
@@ -48,15 +63,16 @@ Reproduces the behaviour of
 -}
 {-# INLINE insert #-}
 insert :: Monad m => a -> Focus a m ()
-insert a = alter (const (Just a))
+insert a = pureResultlessCases (Just a) (const (Just a))
 
 {-|
 Reproduces the behaviour of
 @Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:insertWith insertWith>@
 with a better name.
 -}
+{-# INLINE insertOrMerge #-}
 insertOrMerge :: Monad m => (a -> a -> a) -> a -> Focus a m ()
-insertOrMerge merge value = alter (Just . maybe value (merge value))
+insertOrMerge merge value = pureResultlessCases (Just value) (Just . merge value) 
 
 {-|
 Reproduces the behaviour of
@@ -64,7 +80,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE alter #-}
 alter :: Monad m => (Maybe a -> Maybe a) -> Focus a m ()
-alter fn = pureMaybeFn (((),) . fn)
+alter fn = pureResultlessCases (fn Nothing) (fn . Just)
 
 {-|
 Reproduces the behaviour of
@@ -72,7 +88,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE adjust #-}
 adjust :: Monad m => (a -> a) -> Focus a m ()
-adjust fn = alter (fmap fn)
+adjust fn = update (Just . fn)
 
 {-|
 Reproduces the behaviour of
@@ -80,7 +96,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE update #-}
 update :: Monad m => (a -> Maybe a) -> Focus a m ()
-update fn = alter (flip (>>=) fn)
+update fn = pureResultlessCases Nothing fn
 
 {-|
 Reproduces the behaviour of
@@ -88,7 +104,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE[1] lookup #-}
 lookup :: Monad m => Focus a m (Maybe a)
-lookup = pureMaybeFn (id &&& id)
+lookup = pureCases (Nothing, Nothing) (\ a -> (Just a, Just a))
 
 {-|
 Reproduces the behaviour of
@@ -97,7 +113,7 @@ with a better name.
 -}
 {-# INLINE[1] lookupWithDefault #-}
 lookupWithDefault :: Monad m => a -> Focus a m a
-lookupWithDefault a = pureMaybeFn (maybe a id &&& id)
+lookupWithDefault a = pureCases (a, Nothing) (\ a -> (a, Just a))
 
 {-|
 Reproduces the behaviour of
@@ -113,7 +129,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE[1] delete #-}
 delete :: Monad m => Focus a m ()
-delete = alter (const Nothing)
+delete = pureResultlessCases Nothing (const Nothing)
 
 {-|
 Lookup an element and delete it if it exists.
@@ -124,7 +140,7 @@ Same as @'lookup' <* 'delete'@.
   "lookup <* delete" [~1] lookup <* delete = lookupAndDelete
   #-}
 lookupAndDelete :: Monad m => Focus a m (Maybe a)
-lookupAndDelete = pureMaybeFn (\ state -> (state, Nothing))
+lookupAndDelete = pureCases (Nothing, Nothing) (\ element -> (Just element, Nothing))
 
 
 -- * Monadic functions
@@ -133,5 +149,6 @@ lookupAndDelete = pureMaybeFn (\ state -> (state, Nothing))
 {-|
 Lift a monadic function on the state of an element, which may as well produce a result.
 -}
-maybeFn :: Monad m => (Maybe a -> m (b, Maybe a)) -> Focus a m b
-maybeFn fn = Focus (fn Nothing) (fn . Just)
+{-# INLINE onMaybe #-}
+onMaybe :: Monad m => (Maybe a -> m (b, Maybe a)) -> Focus a m b
+onMaybe fn = Focus (fn Nothing) (fn . Just)
