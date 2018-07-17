@@ -132,13 +132,6 @@ update fn = unitCases Nothing fn
 -------------------------
 
 {-|
-Lift a pure function on the state of an element, which may as well produce a result.
--}
-{-# INLINE onMaybe #-}
-onMaybe :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
-onMaybe fn = onMaybeM (return . fn)
-
-{-|
 Lift pure functions which handle the cases of presence and absence of the element.
 -}
 {-# INLINE cases #-}
@@ -214,13 +207,6 @@ updateM fn = unitCasesM (pure Nothing) fn
 
 -- ** Construction utils
 -------------------------
-
-{-|
-Lift a monadic function on the state of an element, which may as well produce a result.
--}
-{-# INLINE onMaybeM #-}
-onMaybeM :: Monad m => (Maybe a -> m (b, Maybe a)) -> Focus a m b
-onMaybeM fn = Focus (fn Nothing) (fn . Just)
 
 {-|
 Lift monadic functions which handle the cases of presence and absence of the element.
