@@ -11,7 +11,7 @@ It is composable using the standard typeclasses, e.g.:
 >lookupAndDelete :: Monad m => Focus a m (Maybe a)
 >lookupAndDelete = lookup <* delete
 -}
-data Focus element m result = Focus (m (result, Maybe element)) (element -> m (result, Maybe element))
+data Focus element m result = Focus (m (result, Change element)) (element -> m (result, Change element))
 
 deriving instance Functor m => Functor (Focus element m)
 
@@ -20,17 +20,30 @@ instance Monad m => Applicative (Focus element m) where
   (<*>) = ap
 
 instance Monad m => Monad (Focus element m) where
-  return result = Focus (return (result, Nothing)) (\ element -> return (result, Just element))
-  (>>=) (Focus aOnNoElement aOnElement) bKleisli = let
-    onElement element = do
-      (aResult, aOutState) <- aOnElement element
+  return result = Focus (return (result, Leave)) (\ _ -> return (result, Leave))
+  (>>=) (Focus aAbsent bPresent) bKleisli = let
+    sendSome element = do
+      (aResult, aChange) <- bPresent element
       case bKleisli aResult of
-        Focus bOnNoElement bOnElement -> maybe bOnNoElement bOnElement aOutState
-    onNoElement = do
-      (aResult, aOutState) <- aOnNoElement
+        Focus bAbsent bOnElement -> case aChange of
+          Leave -> bOnElement element
+          Remove -> bAbsent
+          Set newElement -> bOnElement newElement
+    sendNone = do
+      (aResult, aChange) <- aAbsent
       case bKleisli aResult of
-        Focus bOnNoElement bOnElement -> maybe bOnNoElement bOnElement aOutState
-    in Focus onNoElement onElement
+        Focus bAbsent bOnElement -> case aChange of
+          Set newElement -> bOnElement newElement
+          Leave -> bAbsent
+          Remove -> bAbsent
+    in Focus sendNone sendSome
+
+{-|
+What to do with the focused value.
+
+The interpretation of the commands is up to the context APIs.
+-}
+data Change a = Leave | Remove | Set a deriving (Functor, Eq, Ord, Show)
 
 
 -- * Pure functions
@@ -53,7 +66,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE[1] lookup #-}
 lookup :: Monad m => Focus a m (Maybe a)
-lookup = cases (Nothing, Nothing) (\ a -> (Just a, Just a))
+lookup = cases (Nothing, Leave) (\ a -> (Just a, Leave))
 
 {-|
 Reproduces the behaviour of
@@ -62,7 +75,7 @@ with a better name.
 -}
 {-# INLINE[1] lookupWithDefault #-}
 lookupWithDefault :: Monad m => a -> Focus a m a
-lookupWithDefault a = cases (a, Nothing) (\ a -> (a, Just a))
+lookupWithDefault a = cases (a, Leave) (\ a -> (a, Leave))
 
 -- ** Modifying functions
 -------------------------
@@ -73,7 +86,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE[1] delete #-}
 delete :: Monad m => Focus a m ()
-delete = unitCases Nothing (const Nothing)
+delete = unitCases Leave (const Remove)
 
 {-|
 Lookup an element and delete it if it exists.
@@ -85,7 +98,7 @@ Same as @'lookup' <* 'delete'@.
   #-}
 {-# INLINE lookupAndDelete #-}
 lookupAndDelete :: Monad m => Focus a m (Maybe a)
-lookupAndDelete = cases (Nothing, Nothing) (\ element -> (Just element, Nothing))
+lookupAndDelete = cases (Nothing, Leave) (\ element -> (Just element, Remove))
 
 {-|
 Reproduces the behaviour of
@@ -93,7 +106,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE insert #-}
 insert :: Monad m => a -> Focus a m ()
-insert a = unitCases (Just a) (const (Just a))
+insert a = unitCases (Set a) (const (Set a))
 
 {-|
 Reproduces the behaviour of
@@ -102,7 +115,7 @@ with a better name.
 -}
 {-# INLINE insertOrMerge #-}
 insertOrMerge :: Monad m => (a -> a -> a) -> a -> Focus a m ()
-insertOrMerge merge value = unitCases (Just value) (Just . merge value) 
+insertOrMerge merge value = unitCases (Set value) (Set . merge value) 
 
 {-|
 Reproduces the behaviour of
@@ -110,7 +123,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE alter #-}
 alter :: Monad m => (Maybe a -> Maybe a) -> Focus a m ()
-alter fn = unitCases (fn Nothing) (fn . Just)
+alter fn = unitCases (maybe Leave Set (fn Nothing)) (maybe Leave Set . fn . Just)
 
 {-|
 Reproduces the behaviour of
@@ -118,7 +131,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE adjust #-}
 adjust :: Monad m => (a -> a) -> Focus a m ()
-adjust fn = update (Just . fn)
+adjust fn = unitCases Leave (Set . fn)
 
 {-|
 Reproduces the behaviour of
@@ -126,7 +139,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE update #-}
 update :: Monad m => (a -> Maybe a) -> Focus a m ()
-update fn = unitCases Nothing fn
+update fn = unitCases Leave (maybe Leave Set . fn)
 
 -- ** Construction utils
 -------------------------
@@ -135,15 +148,15 @@ update fn = unitCases Nothing fn
 Lift pure functions which handle the cases of presence and absence of the element.
 -}
 {-# INLINE cases #-}
-cases :: Monad m => (b, Maybe a) -> (a -> (b, Maybe a)) -> Focus a m b
-cases onNoElement onElement = Focus (return onNoElement) (return . onElement)
+cases :: Monad m => (b, Change a) -> (a -> (b, Change a)) -> Focus a m b
+cases sendNone sendSome = Focus (return sendNone) (return . sendSome)
 
 {-|
 Lift pure functions which handle the cases of presence and absence of the element and produce no result.
 -}
 {-# INLINE unitCases #-}
-unitCases :: Monad m => Maybe a -> (a -> Maybe a) -> Focus a m ()
-unitCases onNoElement onElement = cases ((), onNoElement) (\ a -> ((), onElement a))
+unitCases :: Monad m => Change a -> (a -> Change a) -> Focus a m ()
+unitCases sendNone sendSome = cases ((), sendNone) (\ a -> ((), sendSome a))
 
 
 -- * Monadic functions
@@ -159,7 +172,7 @@ with a better name.
 -}
 {-# INLINE[1] lookupWithDefaultM #-}
 lookupWithDefaultM :: Monad m => m a -> Focus a m a
-lookupWithDefaultM aM = casesM (liftM2 (,) aM (return Nothing)) (\ a -> return (a, Just a))
+lookupWithDefaultM aM = casesM (liftM2 (,) aM (return Leave)) (\ a -> return (a, Leave))
 
 -- ** Modifying functions
 -------------------------
@@ -170,7 +183,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE insertM #-}
 insertM :: Monad m => m a -> Focus a m ()
-insertM aM = unitCasesM (fmap Just aM) (const (fmap Just aM))
+insertM aM = unitCasesM (fmap Set aM) (const (fmap Set aM))
 
 {-|
 Reproduces the behaviour of
@@ -179,7 +192,7 @@ with a better name.
 -}
 {-# INLINE insertOrMergeM #-}
 insertOrMergeM :: Monad m => (a -> a -> m a) -> m a -> Focus a m ()
-insertOrMergeM merge aM = unitCasesM (fmap Just aM) (\ a' -> aM >>= \ a -> fmap Just (merge a a'))
+insertOrMergeM merge aM = unitCasesM (fmap Set aM) (\ a' -> aM >>= \ a -> fmap Set (merge a a'))
 
 {-|
 Reproduces the behaviour of
@@ -187,7 +200,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE alterM #-}
 alterM :: Monad m => (Maybe a -> m (Maybe a)) -> Focus a m ()
-alterM fn = unitCasesM (fn Nothing) (fn . Just)
+alterM fn = unitCasesM (fmap (maybe Leave Set) (fn Nothing)) (fmap (maybe Leave Set) . fn . Just)
 
 {-|
 Reproduces the behaviour of
@@ -203,7 +216,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE updateM #-}
 updateM :: Monad m => (a -> m (Maybe a)) -> Focus a m ()
-updateM fn = unitCasesM (pure Nothing) fn
+updateM fn = unitCasesM (return Leave) (fmap (maybe Leave Set) . fn)
 
 -- ** Construction utils
 -------------------------
@@ -212,12 +225,12 @@ updateM fn = unitCasesM (pure Nothing) fn
 Lift monadic functions which handle the cases of presence and absence of the element.
 -}
 {-# INLINE casesM #-}
-casesM :: Monad m => m (b, Maybe a) -> (a -> m (b, Maybe a)) -> Focus a m b
-casesM onNoElement onElement = Focus (onNoElement) (onElement)
+casesM :: Monad m => m (b, Change a) -> (a -> m (b, Change a)) -> Focus a m b
+casesM sendNone sendSome = Focus sendNone sendSome
 
 {-|
 Lift monadic functions which handle the cases of presence and absence of the element and produce no result.
 -}
 {-# INLINE unitCasesM #-}
-unitCasesM :: Monad m => m (Maybe a) -> (a -> m (Maybe a)) -> Focus a m ()
-unitCasesM onNoElement onElement = Focus (fmap ((),) onNoElement) (\ a -> fmap ((),) (onElement a))
+unitCasesM :: Monad m => m (Change a) -> (a -> m (Change a)) -> Focus a m ()
+unitCasesM sendNone sendSome = Focus (fmap ((),) sendNone) (\ a -> fmap ((),) (sendSome a))
