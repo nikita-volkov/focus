@@ -68,6 +68,14 @@ lookupWithDefault a = cases (a, Nothing) (\ a -> (a, Just a))
 -------------------------
 
 {-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:delete delete>@.
+-}
+{-# INLINE[1] delete #-}
+delete :: Monad m => Focus a m ()
+delete = unitCases Nothing (const Nothing)
+
+{-|
 Lookup an element and delete it if it exists.
 
 Same as @'lookup' <* 'delete'@.
@@ -78,14 +86,6 @@ Same as @'lookup' <* 'delete'@.
 {-# INLINE lookupAndDelete #-}
 lookupAndDelete :: Monad m => Focus a m (Maybe a)
 lookupAndDelete = cases (Nothing, Nothing) (\ element -> (Just element, Nothing))
-
-{-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:delete delete>@.
--}
-{-# INLINE[1] delete #-}
-delete :: Monad m => Focus a m ()
-delete = unitCases Nothing (const Nothing)
 
 {-|
 Reproduces the behaviour of
