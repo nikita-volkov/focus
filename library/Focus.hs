@@ -53,7 +53,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE[1] lookup #-}
 lookup :: Monad m => Focus a m (Maybe a)
-lookup = pureCases (Nothing, Nothing) (\ a -> (Just a, Just a))
+lookup = cases (Nothing, Nothing) (\ a -> (Just a, Just a))
 
 {-|
 Reproduces the behaviour of
@@ -62,7 +62,7 @@ with a better name.
 -}
 {-# INLINE[1] lookupWithDefault #-}
 lookupWithDefault :: Monad m => a -> Focus a m a
-lookupWithDefault a = pureCases (a, Nothing) (\ a -> (a, Just a))
+lookupWithDefault a = cases (a, Nothing) (\ a -> (a, Just a))
 
 -- ** Modifying functions
 -------------------------
@@ -76,7 +76,7 @@ Same as @'lookup' <* 'delete'@.
   "lookup <* delete" [~1] lookup <* delete = lookupAndDelete
   #-}
 lookupAndDelete :: Monad m => Focus a m (Maybe a)
-lookupAndDelete = pureCases (Nothing, Nothing) (\ element -> (Just element, Nothing))
+lookupAndDelete = cases (Nothing, Nothing) (\ element -> (Just element, Nothing))
 
 {-|
 Reproduces the behaviour of
@@ -84,7 +84,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE[1] delete #-}
 delete :: Monad m => Focus a m ()
-delete = pureResultlessCases Nothing (const Nothing)
+delete = unitCases Nothing (const Nothing)
 
 {-|
 Reproduces the behaviour of
@@ -92,7 +92,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE insert #-}
 insert :: Monad m => a -> Focus a m ()
-insert a = pureResultlessCases (Just a) (const (Just a))
+insert a = unitCases (Just a) (const (Just a))
 
 {-|
 Reproduces the behaviour of
@@ -101,7 +101,7 @@ with a better name.
 -}
 {-# INLINE insertOrMerge #-}
 insertOrMerge :: Monad m => (a -> a -> a) -> a -> Focus a m ()
-insertOrMerge merge value = pureResultlessCases (Just value) (Just . merge value) 
+insertOrMerge merge value = unitCases (Just value) (Just . merge value) 
 
 {-|
 Reproduces the behaviour of
@@ -109,7 +109,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE alter #-}
 alter :: Monad m => (Maybe a -> Maybe a) -> Focus a m ()
-alter fn = pureResultlessCases (fn Nothing) (fn . Just)
+alter fn = unitCases (fn Nothing) (fn . Just)
 
 {-|
 Reproduces the behaviour of
@@ -125,7 +125,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE update #-}
 update :: Monad m => (a -> Maybe a) -> Focus a m ()
-update fn = pureResultlessCases Nothing fn
+update fn = unitCases Nothing fn
 
 -- ** Construction utils
 -------------------------
@@ -133,23 +133,23 @@ update fn = pureResultlessCases Nothing fn
 {-|
 Lift a pure function on the state of an element, which may as well produce a result.
 -}
-{-# INLINE pureOnMaybe #-}
-pureOnMaybe :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
-pureOnMaybe fn = onMaybe (return . fn)
+{-# INLINE onMaybe #-}
+onMaybe :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
+onMaybe fn = onMaybeM (return . fn)
 
 {-|
 Lift pure functions which handle the cases of presence and absence of the element.
 -}
-{-# INLINE pureCases #-}
-pureCases :: Monad m => (b, Maybe a) -> (a -> (b, Maybe a)) -> Focus a m b
-pureCases onNoElement onElement = Focus (return onNoElement) (return . onElement)
+{-# INLINE cases #-}
+cases :: Monad m => (b, Maybe a) -> (a -> (b, Maybe a)) -> Focus a m b
+cases onNoElement onElement = Focus (return onNoElement) (return . onElement)
 
 {-|
 Lift pure functions which handle the cases of presence and absence of the element and produce no result.
 -}
-{-# INLINE pureResultlessCases #-}
-pureResultlessCases :: Monad m => Maybe a -> (a -> Maybe a) -> Focus a m ()
-pureResultlessCases onNoElement onElement = pureCases ((), onNoElement) (\ a -> ((), onElement a))
+{-# INLINE unitCases #-}
+unitCases :: Monad m => Maybe a -> (a -> Maybe a) -> Focus a m ()
+unitCases onNoElement onElement = cases ((), onNoElement) (\ a -> ((), onElement a))
 
 
 -- * Monadic functions
@@ -158,6 +158,6 @@ pureResultlessCases onNoElement onElement = pureCases ((), onNoElement) (\ a -> 
 {-|
 Lift a monadic function on the state of an element, which may as well produce a result.
 -}
-{-# INLINE onMaybe #-}
-onMaybe :: Monad m => (Maybe a -> m (b, Maybe a)) -> Focus a m b
-onMaybe fn = Focus (fn Nothing) (fn . Just)
+{-# INLINE onMaybeM #-}
+onMaybeM :: Monad m => (Maybe a -> m (b, Maybe a)) -> Focus a m b
+onMaybeM fn = Focus (fn Nothing) (fn . Just)
