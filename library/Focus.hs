@@ -36,26 +36,55 @@ instance Monad m => Monad (Focus element m) where
 -- * Pure functions
 -------------------------
 
-{-|
-Lift a pure function on the state of an element, which may as well produce a result.
--}
-{-# INLINE pureOnMaybe #-}
-pureOnMaybe :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
-pureOnMaybe fn = onMaybe (return . fn)
+-- ** Reading functions
+-------------------------
 
 {-|
-Lift pure functions which handle the cases of presence and absence of the element.
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:lookup lookup>@.
 -}
-{-# INLINE pureCases #-}
-pureCases :: Monad m => (b, Maybe a) -> (a -> (b, Maybe a)) -> Focus a m b
-pureCases onNoElement onElement = Focus (return onNoElement) (return . onElement)
+{-# INLINE member #-}
+member :: Monad m => Focus a m Bool
+member = fmap (maybe False (const True)) lookup
 
 {-|
-Lift pure functions which handle the cases of presence and absence of the element and produce no result.
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:lookup lookup>@.
 -}
-{-# INLINE pureResultlessCases #-}
-pureResultlessCases :: Monad m => Maybe a -> (a -> Maybe a) -> Focus a m ()
-pureResultlessCases onNoElement onElement = pureCases ((), onNoElement) (\ a -> ((), onElement a))
+{-# INLINE[1] lookup #-}
+lookup :: Monad m => Focus a m (Maybe a)
+lookup = pureCases (Nothing, Nothing) (\ a -> (Just a, Just a))
+
+{-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:findWithDefault findWithDefault>@
+with a better name.
+-}
+{-# INLINE[1] lookupWithDefault #-}
+lookupWithDefault :: Monad m => a -> Focus a m a
+lookupWithDefault a = pureCases (a, Nothing) (\ a -> (a, Just a))
+
+-- ** Modifying functions
+-------------------------
+
+{-|
+Lookup an element and delete it if it exists.
+
+Same as @'lookup' <* 'delete'@.
+-}
+{-# RULES
+  "lookup <* delete" [~1] lookup <* delete = lookupAndDelete
+  #-}
+lookupAndDelete :: Monad m => Focus a m (Maybe a)
+lookupAndDelete = pureCases (Nothing, Nothing) (\ element -> (Just element, Nothing))
+
+{-|
+Reproduces the behaviour of
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:delete delete>@.
+-}
+{-# INLINE[1] delete #-}
+delete :: Monad m => Focus a m ()
+delete = pureResultlessCases Nothing (const Nothing)
 
 {-|
 Reproduces the behaviour of
@@ -98,49 +127,29 @@ Reproduces the behaviour of
 update :: Monad m => (a -> Maybe a) -> Focus a m ()
 update fn = pureResultlessCases Nothing fn
 
-{-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:lookup lookup>@.
--}
-{-# INLINE[1] lookup #-}
-lookup :: Monad m => Focus a m (Maybe a)
-lookup = pureCases (Nothing, Nothing) (\ a -> (Just a, Just a))
+-- ** Construction utils
+-------------------------
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:findWithDefault findWithDefault>@
-with a better name.
+Lift a pure function on the state of an element, which may as well produce a result.
 -}
-{-# INLINE[1] lookupWithDefault #-}
-lookupWithDefault :: Monad m => a -> Focus a m a
-lookupWithDefault a = pureCases (a, Nothing) (\ a -> (a, Just a))
+{-# INLINE pureOnMaybe #-}
+pureOnMaybe :: Monad m => (Maybe a -> (b, Maybe a)) -> Focus a m b
+pureOnMaybe fn = onMaybe (return . fn)
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:lookup lookup>@.
+Lift pure functions which handle the cases of presence and absence of the element.
 -}
-{-# INLINE member #-}
-member :: Monad m => Focus a m Bool
-member = fmap (maybe False (const True)) lookup
+{-# INLINE pureCases #-}
+pureCases :: Monad m => (b, Maybe a) -> (a -> (b, Maybe a)) -> Focus a m b
+pureCases onNoElement onElement = Focus (return onNoElement) (return . onElement)
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:delete delete>@.
+Lift pure functions which handle the cases of presence and absence of the element and produce no result.
 -}
-{-# INLINE[1] delete #-}
-delete :: Monad m => Focus a m ()
-delete = pureResultlessCases Nothing (const Nothing)
-
-{-|
-Lookup an element and delete it if it exists.
-
-Same as @'lookup' <* 'delete'@.
--}
-{-# RULES
-  "lookup <* delete" [~1] lookup <* delete = lookupAndDelete
-  #-}
-lookupAndDelete :: Monad m => Focus a m (Maybe a)
-lookupAndDelete = pureCases (Nothing, Nothing) (\ element -> (Just element, Nothing))
+{-# INLINE pureResultlessCases #-}
+pureResultlessCases :: Monad m => Maybe a -> (a -> Maybe a) -> Focus a m ()
+pureResultlessCases onNoElement onElement = pureCases ((), onNoElement) (\ a -> ((), onElement a))
 
 
 -- * Monadic functions
