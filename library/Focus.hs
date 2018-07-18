@@ -331,3 +331,21 @@ testingSizeChange dec none inc (Focus absent present) =
             Remove -> dec
             _ -> none
           in return ((output, sizeChange), change)
+
+
+-- * STM
+-------------------------
+
+{-# INLINE onTVarValue #-}
+onTVarValue :: Focus a STM b -> Focus (TVar a) STM b
+onTVarValue (Focus concealA presentA) = Focus concealTVar presentTVar where
+  concealTVar = concealA >>= traverse interpretAChange where
+    interpretAChange = \ case
+      Leave -> return Leave
+      Set !a -> Set <$> newTVar a
+      Remove -> return Leave
+  presentTVar var = readTVar var >>= presentA >>= traverse interpretAChange where
+    interpretAChange = \ case
+      Leave -> return Leave
+      Set !a -> writeTVar var a $> Leave
+      Remove -> return Remove
