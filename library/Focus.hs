@@ -236,6 +236,20 @@ unitCasesM :: Monad m => m (Change a) -> (a -> m (Change a)) -> Focus a m ()
 unitCasesM sendNone sendSome = Focus (fmap ((),) sendNone) (\ a -> fmap ((),) (sendSome a))
 
 
+-- * Composition
+-------------------------
+
+{-# INLINE mappingInput #-}
+mappingInput :: Monad m => (a -> b) -> (b -> a) -> Focus a m x -> Focus b m x
+mappingInput aToB bToA (Focus consealA revealA) = Focus consealB revealB where
+  consealB = do
+    (x, aChange) <- consealA
+    return (x, fmap aToB aChange)
+  revealB b = do
+    (x, aChange) <- revealA (bToA b)
+    return (x, fmap aToB aChange)
+
+
 -- * Change-inspecting functions
 -------------------------
 
