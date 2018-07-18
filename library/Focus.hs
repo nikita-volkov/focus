@@ -234,3 +234,100 @@ Lift monadic functions which handle the cases of presence and absence of the ele
 {-# INLINE unitCasesM #-}
 unitCasesM :: Monad m => m (Change a) -> (a -> m (Change a)) -> Focus a m ()
 unitCasesM sendNone sendSome = Focus (fmap ((),) sendNone) (\ a -> fmap ((),) (sendSome a))
+
+
+-- * Change-inspecting functions
+-------------------------
+
+{-|
+Extends the output with the change performed.
+-}
+{-# INLINE extractingChange #-}
+extractingChange :: Monad m => Focus a m b -> Focus a m (b, Change a)
+extractingChange (Focus absent present) =
+  Focus newAbsent newPresent
+  where
+    newAbsent = do
+      (b, change) <- absent
+      return ((b, change), change)
+    newPresent element = do
+      (b, change) <- present element
+      return ((b, change), change)
+
+{-|
+Extends the output with a projection on the change that was performed.
+-}
+{-# INLINE projectingChange #-}
+projectingChange :: Monad m => (Change a -> c) -> Focus a m b -> Focus a m (b, c)
+projectingChange fn (Focus absent present) =
+  Focus newAbsent newPresent
+  where
+    newAbsent = do
+      (b, change) <- absent
+      return ((b, fn change), change)
+    newPresent element = do
+      (b, change) <- present element
+      return ((b, fn change), change)
+
+{-|
+Extends the output with a flag,
+signaling whether a change, which is not 'Leave', has been introduced.
+-}
+{-# INLINE testingIfModifies #-}
+testingIfModifies :: Monad m => Focus a m b -> Focus a m (b, Bool)
+testingIfModifies =
+  projectingChange $ \ case
+    Leave -> False
+    _ -> True
+
+{-|
+Extends the output with a flag,
+signaling whether the 'Remove' change has been introduced.
+-}
+{-# INLINE testingIfRemoves #-}
+testingIfRemoves :: Monad m => Focus a m b -> Focus a m (b, Bool)
+testingIfRemoves =
+  projectingChange $ \ case
+    Remove -> True
+    _ -> False
+
+{-|
+Extends the output with a flag,
+signaling whether an item will be inserted.
+That is, it didn't exist before and a 'Set' change is introduced.
+-}
+{-# INLINE testingIfInserts #-}
+testingIfInserts :: Monad m => Focus a m b -> Focus a m (b, Bool)
+testingIfInserts (Focus absent present) =
+  Focus newAbsent newPresent
+  where
+    newAbsent = do
+      (output, change) <- absent
+      let testResult = case change of
+            Set _ -> True
+            _ -> False
+          in return ((output, testResult), change)
+    newPresent element = do
+      (output, change) <- present element
+      return ((output, False), change)
+
+{-|
+Extend the output with a flag, signaling whether how the size will be affected by the change.
+-}
+{-# INLINE testingSizeChange #-}
+testingSizeChange :: Monad m => sizeChange {-^ Decreased -} -> sizeChange {-^ Didn't change -} -> sizeChange {-^ Increased -} -> Focus a m b -> Focus a m (b, sizeChange)
+testingSizeChange dec none inc (Focus absent present) =
+  Focus newAbsent newPresent
+  where
+    newAbsent = do
+      (output, change) <- absent
+      let sizeChange = case change of
+            Set _ -> inc
+            _ -> none
+          in return ((output, sizeChange), change)
+    newPresent element = do
+      (output, change) <- present element
+      let sizeChange = case change of
+            Remove -> dec
+            _ -> none
+          in return ((output, sizeChange), change)
