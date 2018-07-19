@@ -166,9 +166,7 @@ unitCases sendNone sendSome = cases ((), sendNone) (\ a -> ((), sendSome a))
 -------------------------
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:findWithDefault findWithDefault>@
-with a better name.
+A monadic version of 'lookupWithDefault'.
 -}
 {-# INLINE[1] lookupWithDefaultM #-}
 lookupWithDefaultM :: Monad m => m a -> Focus a m a
@@ -178,41 +176,35 @@ lookupWithDefaultM aM = casesM (liftM2 (,) aM (return Leave)) (\ a -> return (a,
 -------------------------
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:insert insert>@.
+A monadic version of 'insert'.
 -}
 {-# INLINE insertM #-}
 insertM :: Monad m => m a -> Focus a m ()
 insertM aM = unitCasesM (fmap Set aM) (const (fmap Set aM))
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:insertWith insertWith>@
-with a better name.
+A monadic version of 'insertOrMerge'.
 -}
 {-# INLINE insertOrMergeM #-}
 insertOrMergeM :: Monad m => (a -> a -> m a) -> m a -> Focus a m ()
 insertOrMergeM merge aM = unitCasesM (fmap Set aM) (\ a' -> aM >>= \ a -> fmap Set (merge a a'))
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:alter alter>@.
+A monadic version of 'alter'.
 -}
 {-# INLINE alterM #-}
 alterM :: Monad m => (Maybe a -> m (Maybe a)) -> Focus a m ()
 alterM fn = unitCasesM (fmap (maybe Leave Set) (fn Nothing)) (fmap (maybe Leave Set) . fn . Just)
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:adjust adjust>@.
+A monadic version of 'adjust'.
 -}
 {-# INLINE adjustM #-}
 adjustM :: Monad m => (a -> m a) -> Focus a m ()
 adjustM fn = updateM (fmap Just . fn)
 
 {-|
-Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:update update>@.
+A monadic version of 'update'.
 -}
 {-# INLINE updateM #-}
 updateM :: Monad m => (a -> m (Maybe a)) -> Focus a m ()
@@ -239,6 +231,9 @@ unitCasesM sendNone sendSome = Focus (fmap ((),) sendNone) (\ a -> fmap ((),) (s
 -- * Composition
 -------------------------
 
+{-|
+Map the Focus input.
+-}
 {-# INLINE mappingInput #-}
 mappingInput :: Monad m => (a -> b) -> (b -> a) -> Focus a m x -> Focus b m x
 mappingInput aToB bToA (Focus consealA revealA) = Focus consealB revealB where
@@ -326,7 +321,7 @@ testingIfInserts (Focus absent present) =
       return ((output, False), change)
 
 {-|
-Extend the output with a flag, signaling whether how the size will be affected by the change.
+Extend the output with a flag, signaling how the size will be affected by the change.
 -}
 {-# INLINE testingSizeChange #-}
 testingSizeChange :: Monad m => sizeChange {-^ Decreased -} -> sizeChange {-^ Didn't change -} -> sizeChange {-^ Increased -} -> Focus a m b -> Focus a m (b, sizeChange)
@@ -350,6 +345,9 @@ testingSizeChange dec none inc (Focus absent present) =
 -- * STM
 -------------------------
 
+{-|
+Focus on the contents of a TVar.
+-}
 {-# INLINE onTVarValue #-}
 onTVarValue :: Focus a STM b -> Focus (TVar a) STM b
 onTVarValue (Focus concealA presentA) = Focus concealTVar presentTVar where
