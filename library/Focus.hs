@@ -249,6 +249,21 @@ mappingInput aToB bToA (Focus consealA revealA) = Focus consealB revealB where
 -------------------------
 
 {-|
+Extends the output with the input.
+-}
+{-# INLINE extractingInput #-}
+extractingInput :: Monad m => Focus a m b -> Focus a m (b, Maybe a)
+extractingInput (Focus absent present) =
+  Focus newAbsent newPresent
+  where
+    newAbsent = do
+      (b, change) <- absent
+      return ((b, Nothing), change)
+    newPresent element = do
+      (b, change) <- present element
+      return ((b, Just element), change)
+
+{-|
 Extends the output with the change performed.
 -}
 {-# INLINE extractingChange #-}
