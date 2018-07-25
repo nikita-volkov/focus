@@ -38,6 +38,9 @@ instance Monad m => Monad (Focus element m) where
           Remove -> bAbsent
     in Focus sendNone sendSome
 
+instance MonadTrans (Focus element) where
+  lift m = Focus (fmap (,Leave) m) (const (fmap (,Leave) m))
+
 {-|
 What to do with the focused value.
 
