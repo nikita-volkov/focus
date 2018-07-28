@@ -46,7 +46,11 @@ What to do with the focused value.
 
 The interpretation of the commands is up to the context APIs.
 -}
-data Change a = Leave | Remove | Set a deriving (Functor, Eq, Ord, Show)
+data Change a =
+  Leave {-^ Produce no changes -} |
+  Remove {-^ Delete it -} |
+  Set a {-^ Replace it with the provided value -}
+  deriving (Functor, Eq, Ord, Show)
 
 
 -- * Pure functions
