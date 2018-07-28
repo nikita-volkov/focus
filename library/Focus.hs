@@ -49,7 +49,7 @@ The interpretation of the commands is up to the context APIs.
 data Change a =
   Leave {-^ Produce no changes -} |
   Remove {-^ Delete it -} |
-  Set a {-^ Replace it with the provided value -}
+  Set a {-^ Set its value to the provided one -}
   deriving (Functor, Eq, Ord, Show)
 
 
