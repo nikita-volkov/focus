@@ -41,3 +41,19 @@ library
   build-depends:
     base >=4.6 && <5,
     transformers >=0.5 && <0.6
+
+test-suite test
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  default-extensions: BangPatterns, DeriveDataTypeable, DeriveGeneric, DeriveFunctor, DeriveTraversable, FlexibleContexts, FlexibleInstances, LambdaCase, NoImplicitPrelude, RankNTypes, ScopedTypeVariables, StandaloneDeriving, TypeApplications, TypeFamilies
+  default-language: Haskell2010
+  main-is:
+    Main.hs
+  build-depends:
+    focus,
+    QuickCheck >=2.8.1 && <3,
+    quickcheck-instances >=0.3.11 && <0.4,
+    rerebase <2,
+    tasty >=0.12 && <2,
+    tasty-hunit >=0.9 && <0.11,
+    tasty-quickcheck >=0.9 && <0.11

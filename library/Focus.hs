@@ -20,7 +20,7 @@ instance Monad m => Applicative (Focus element m) where
   (<*>) = ap
 
 instance Monad m => Monad (Focus element m) where
-  return result = Focus (return (result, Leave)) (\ _ -> return (result, Leave))
+  return result = Focus (return (result, Leave)) (\ element -> return (result, Set element))
   (>>=) (Focus aAbsent bPresent) bKleisli = let
     sendSome element = do
       (aResult, aChange) <- bPresent element
