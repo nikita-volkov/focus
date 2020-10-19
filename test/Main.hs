@@ -41,4 +41,12 @@ main =
       in do
         assertEqual "" ((), Focus.Set "one") (runIdentity (present "zero"))
         assertEqual "" ((), Focus.Set "one") (runIdentity absent)
+    ,
+    testCase "update" $ let
+      f :: String -> Maybe String
+      f = const Nothing
+      Focus.Focus absent present = Focus.update f
+      in do
+        assertEqual "" ((), Focus.Remove) (runIdentity (present "zero"))
+        assertEqual "" ((), Focus.Leave) (runIdentity absent)
   ]
