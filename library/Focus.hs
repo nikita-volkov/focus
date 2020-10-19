@@ -146,7 +146,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE update #-}
 update :: Monad m => (a -> Maybe a) -> Focus a m ()
-update fn = unitCases Leave (maybe Leave Set . fn)
+update fn = unitCases Leave (maybe Remove Set . fn)
 
 -- ** Construction utils
 -------------------------
