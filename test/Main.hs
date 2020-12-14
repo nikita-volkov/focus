@@ -49,4 +49,13 @@ main =
       in do
         assertEqual "" ((), Focus.Remove) (runIdentity (present "zero"))
         assertEqual "" ((), Focus.Leave) (runIdentity absent)
+    ,
+    testCase "Monadically composed lookup and delete (https://github.com/nikita-volkov/focus/issues/7)" $ let
+      Focus.Focus absent present = do
+        a <- Focus.lookup
+        Focus.delete
+        pure a
+      in do
+        assertEqual "" (Just (), Focus.Remove) (runIdentity (present ()))
+        assertEqual "" (Nothing @(), Focus.Leave) (runIdentity absent)
   ]
