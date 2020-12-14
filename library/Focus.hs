@@ -16,27 +16,30 @@ data Focus element m result = Focus (m (result, Change element)) (element -> m (
 deriving instance Functor m => Functor (Focus element m)
 
 instance Monad m => Applicative (Focus element m) where
-  pure = return
+  pure a = Focus (pure (a, Leave)) (const (pure (a, Leave)))
   (<*>) = ap
 
 instance Monad m => Monad (Focus element m) where
-  return result = Focus (return (result, Leave)) (\ element -> return (result, Set element))
-  (>>=) (Focus aAbsent bPresent) bKleisli = let
-    sendSome element = do
-      (aResult, aChange) <- bPresent element
-      case bKleisli aResult of
-        Focus bAbsent bOnElement -> case aChange of
-          Leave -> bOnElement element
-          Remove -> bAbsent
-          Set newElement -> bOnElement newElement
-    sendNone = do
-      (aResult, aChange) <- aAbsent
-      case bKleisli aResult of
-        Focus bAbsent bOnElement -> case aChange of
-          Set newElement -> bOnElement newElement
-          Leave -> bAbsent
-          Remove -> bAbsent
-    in Focus sendNone sendSome
+  return = pure
+  (>>=) (Focus lAbsent lPresent) rk =
+    Focus absent present
+    where
+      absent =
+        do
+          (lr, lChange) <- lAbsent
+          let Focus rAbsent rPresent = rk lr
+          case lChange of
+            Leave -> rAbsent
+            Remove -> rAbsent & fmap (fmap (mappend lChange))
+            Set newElement -> rPresent newElement & fmap (fmap (mappend lChange))
+      present element =
+        do
+          (lr, lChange) <- lPresent element
+          let Focus rAbsent rPresent = rk lr
+          case lChange of
+            Leave -> rPresent element
+            Remove -> rAbsent & fmap (fmap (mappend lChange))
+            Set newElement -> rPresent newElement & fmap (fmap (mappend lChange))
 
 instance MonadTrans (Focus element) where
   lift m = Focus (fmap (,Leave) m) (const (fmap (,Leave) m))
@@ -51,6 +54,15 @@ data Change a =
   Remove {-^ Delete it -} |
   Set a {-^ Set its value to the provided one -}
   deriving (Functor, Eq, Ord, Show)
+
+instance Semigroup (Change a) where
+  (<>) l r =
+    case r of
+      Leave -> l
+      _ -> r
+
+instance Monoid (Change a) where
+  mempty = Leave
 
 
 -- * Pure functions
