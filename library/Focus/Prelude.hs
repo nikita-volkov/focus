@@ -36,6 +36,7 @@ import Data.Monoid as Exports hiding (Last(..), First(..))
 import Data.Ord as Exports
 import Data.Proxy as Exports
 import Data.Ratio as Exports
+import Data.Semigroup as Exports
 import Data.STRef as Exports
 import Data.String as Exports
 import Data.Traversable as Exports
