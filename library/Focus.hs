@@ -73,7 +73,7 @@ instance Monoid (Change a) where
 
 {-|
 Reproduces the behaviour of
-@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:lookup lookup>@.
+@Data.Map.<http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Map-Lazy.html#v:member member>@.
 -}
 {-# INLINE member #-}
 member :: Monad m => Focus a m Bool
