@@ -160,6 +160,33 @@ Reproduces the behaviour of
 update :: Monad m => (a -> Maybe a) -> Focus a m ()
 update fn = unitCases Leave (maybe Remove Set . fn)
 
+{-|
+Same as all of the following expressions:
+
+@\f g -> fmap (fmap f) lookup <* adjust g@
+@\f g -> liftStateFn (f &&& g)@
+@\f g -> liftStateFn ((,) <$> f <*> g)@
+-}
+lookupAndAdjust :: Monad m => (s -> a) -> (s -> s) -> Focus s m (Maybe a)
+lookupAndAdjust f g =
+  liftStateFn (f &&& g)
+
+{-|
+Lift a pure state monad.
+-}
+liftState :: Monad m => State s a -> Focus s m (Maybe a)
+liftState (StateT fn) =
+  liftStateFn (runIdentity . fn)
+
+{-|
+Lift a pure state-monad-like function.
+-}
+liftStateFn :: Monad m => (s -> (a, s)) -> Focus s m (Maybe a)
+liftStateFn fn =
+  Focus
+    (return (Nothing, Leave))
+    (\s -> case fn s of (a, s) -> return (Just a, Set s))
+
 -- ** Construction utils
 -------------------------
 
