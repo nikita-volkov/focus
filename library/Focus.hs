@@ -142,7 +142,7 @@ Reproduces the behaviour of
 -}
 {-# INLINE alter #-}
 alter :: Monad m => (Maybe a -> Maybe a) -> Focus a m ()
-alter fn = unitCases (maybe Leave Set (fn Nothing)) (maybe Leave Set . fn . Just)
+alter fn = unitCases (maybe Leave Set (fn Nothing)) (maybe Remove Set . fn . Just)
 
 {-|
 Reproduces the behaviour of
@@ -240,7 +240,7 @@ A monadic version of 'alter'.
 -}
 {-# INLINE alterM #-}
 alterM :: Monad m => (Maybe a -> m (Maybe a)) -> Focus a m ()
-alterM fn = unitCasesM (fmap (maybe Leave Set) (fn Nothing)) (fmap (maybe Leave Set) . fn . Just)
+alterM fn = unitCasesM (fmap (maybe Leave Set) (fn Nothing)) (fmap (maybe Remove Set) . fn . Just)
 
 {-|
 A monadic version of 'adjust'.
