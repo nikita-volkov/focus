@@ -50,6 +50,14 @@ main =
         assertEqual "" ((), Focus.Remove) (runIdentity (present "zero"))
         assertEqual "" ((), Focus.Leave) (runIdentity absent)
     ,
+    testCase "updateM" $ let
+      f :: String -> Identity (Maybe String)
+      f = const (pure Nothing)
+      Focus.Focus absent present = Focus.updateM f
+      in do
+        assertEqual "" ((), Focus.Remove) (runIdentity (present "zero"))
+        assertEqual "" ((), Focus.Leave) (runIdentity absent)
+    ,
     testCase "delete" $ let
       Focus.Focus absent present = Focus.delete
       in do

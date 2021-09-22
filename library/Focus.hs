@@ -254,7 +254,7 @@ A monadic version of 'update'.
 -}
 {-# INLINE updateM #-}
 updateM :: Monad m => (a -> m (Maybe a)) -> Focus a m ()
-updateM fn = unitCasesM (return Leave) (fmap (maybe Leave Set) . fn)
+updateM fn = unitCasesM (return Leave) (fmap (maybe Remove Set) . fn)
 
 -- ** Construction utils
 -------------------------
