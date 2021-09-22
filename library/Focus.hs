@@ -167,8 +167,8 @@ Same as all of the following expressions:
 @\f g -> liftStateFn (f &&& g)@
 @\f g -> liftStateFn ((,) <$> f <*> g)@
 -}
-lookupAndAdjust :: Monad m => (s -> a) -> (s -> s) -> Focus s m (Maybe a)
-lookupAndAdjust f g =
+accessAndAdjust :: Monad m => (s -> a) -> (s -> s) -> Focus s m (Maybe a)
+accessAndAdjust f g =
   liftStateFn (f &&& g)
 
 {-|
