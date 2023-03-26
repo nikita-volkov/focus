@@ -1,15 +1,11 @@
 module Main where
 
 import qualified Focus
-import qualified Test.QuickCheck as QuickCheck
-import Test.QuickCheck.Instances
-import qualified Test.QuickCheck.Property as QuickCheck
 import Test.Tasty
 import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck
-import Test.Tasty.Runners
 import Prelude hiding (choose)
 
+main :: IO ()
 main =
   defaultMain $
     testGroup "" $
