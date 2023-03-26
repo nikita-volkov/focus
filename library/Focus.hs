@@ -1,6 +1,6 @@
 module Focus where
 
-import Focus.Prelude hiding (adjust, alter, delete, insert, lookup, update)
+import Focus.Prelude hiding (delete, insert, lookup)
 
 -- |
 -- Abstraction over the modification of an element of a datastructure.
@@ -232,7 +232,7 @@ updateM fn = unitCasesM (return Leave) (fmap (maybe Remove Set) . fn)
 -- |
 -- Lift monadic functions which handle the cases of presence and absence of the element.
 {-# INLINE casesM #-}
-casesM :: (Monad m) => m (b, Change a) -> (a -> m (b, Change a)) -> Focus a m b
+casesM :: m (b, Change a) -> (a -> m (b, Change a)) -> Focus a m b
 casesM sendNone sendSome = Focus sendNone sendSome
 
 -- |
